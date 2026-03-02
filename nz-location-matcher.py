@@ -145,11 +145,34 @@ def caverphone2(word):
 
 
 # ---------------------------------------------------------------------------
-# NZ Location Database (~600 entries)
+# NZ Location Database
+# Source of truth: data/nz-locations.json (1600+ entries from LINZ + OSM)
 # ---------------------------------------------------------------------------
 
-NZ_LOCATIONS = [
-    # Auckland Region
+LOCATIONS_JSON = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "nz-locations.json")
+
+
+def load_locations():
+    """Load locations from JSON source of truth file."""
+    try:
+        with open(LOCATIONS_JSON) as f:
+            data = json.load(f)
+        locations = []
+        for loc in data.get("locations", []):
+            locations.append({
+                "name": loc["name"],
+                "city": loc.get("district", loc.get("city", "Unknown")),
+                "region": loc.get("region", "Unknown"),
+            })
+        return locations
+    except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
+        print(f"Warning: Could not load {LOCATIONS_JSON}: {e}", file=sys.stderr)
+        print("Falling back to built-in location list.", file=sys.stderr)
+        return NZ_LOCATIONS_FALLBACK
+
+
+NZ_LOCATIONS_FALLBACK = [
+    # Minimal fallback - only used if JSON file is missing
     {"name": "Auckland CBD", "city": "Auckland", "region": "Auckland"},
     {"name": "Ponsonby", "city": "Auckland", "region": "Auckland"},
     {"name": "Grey Lynn", "city": "Auckland", "region": "Auckland"},
@@ -685,6 +708,9 @@ NZ_LOCATIONS = [
     {"name": "Port Waikato", "city": "Hamilton", "region": "Waikato"},
 ]
 
+# Load from JSON source of truth (or fallback)
+NZ_LOCATIONS = load_locations()
+
 
 # ---------------------------------------------------------------------------
 # Pre-seeded aliases (known STT mishearings from real call data)
@@ -713,6 +739,11 @@ PRE_SEEDED_ALIASES = {
     "ta rah dale": "Taradale",
     "pap a new ee": "Papanui",
     "papa new ee": "Papanui",
+    "lincon": "Lincoln",
+    "roleston": "Rolleston",
+    "temaru": "Timaru",
+    "manuwera": "Manurewa",
+    "manurera": "Manurewa",
     "riccarton": "Riccarton",
     "ricker ton": "Riccarton",
     "lynn wood": "Linwood",
